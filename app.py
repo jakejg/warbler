@@ -4,12 +4,13 @@ from flask import Flask, render_template, request, flash, redirect, session, g
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 
+
 from forms import UserAddForm, LoginForm, MessageForm
 from models import db, connect_db, User, Message
 
-CURR_USER_KEY = "curr_user"
-
 app = Flask(__name__)
+
+CURR_USER_KEY = "curr_user"
 
 # Get DB_URI from environ variable (useful for production/testing) or,
 # if not set there, use development local db.
@@ -44,6 +45,7 @@ def do_login(user):
     """Log in user."""
 
     session[CURR_USER_KEY] = user.id
+    
 
 
 def do_logout():
@@ -55,6 +57,7 @@ def do_logout():
 
 @app.route('/signup', methods=["GET", "POST"])
 def signup():
+
     """Handle user signup.
 
     Create new user and add to DB. Redirect to home page.
@@ -75,15 +78,16 @@ def signup():
                 email=form.email.data,
                 image_url=form.image_url.data or User.image_url.default.arg,
             )
+            db.session.add(user)
             db.session.commit()
 
         except IntegrityError:
             flash("Username already taken", 'danger')
             return render_template('users/signup.html', form=form)
-
+        
         do_login(user)
-
         return redirect("/")
+        
 
     else:
         return render_template('users/signup.html', form=form)
@@ -94,16 +98,17 @@ def login():
     """Handle user login."""
 
     form = LoginForm()
-
+    
     if form.validate_on_submit():
         user = User.authenticate(form.username.data,
                                  form.password.data)
-
+        
         if user:
             do_login(user)
             flash(f"Hello, {user.username}!", "success")
-            return redirect("/")
-
+            return redirect('/')
+            
+        
         flash("Invalid credentials.", 'danger')
 
     return render_template('users/login.html', form=form)
@@ -113,7 +118,9 @@ def login():
 def logout():
     """Handle logout of user."""
 
-    # IMPLEMENT THIS
+    do_logout()
+    flash("You are now logged out")
+    return render_template('home.html')
 
 
 ##############################################################################
@@ -290,7 +297,7 @@ def homepage():
     - anon users: no messages
     - logged in: 100 most recent messages of followed_users
     """
-
+  
     if g.user:
         messages = (Message
                     .query

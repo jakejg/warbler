@@ -5,6 +5,7 @@ from datetime import datetime
 from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
 
+
 bcrypt = Bcrypt()
 db = SQLAlchemy()
 
@@ -145,8 +146,7 @@ class User(db.Model):
             password=hashed_pwd,
             image_url=image_url,
         )
-
-        db.session.add(user)
+        
         return user
 
     @classmethod
