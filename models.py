@@ -146,7 +146,6 @@ class User(db.Model):
             password=hashed_pwd,
             image_url=image_url,
         )
-        
         return user
 
     @classmethod
@@ -197,6 +196,7 @@ class Message(db.Model):
         nullable=False,
     )
 
+    likes = db.relationship('Likes', backref='messages')
     user = db.relationship('User')
 
 

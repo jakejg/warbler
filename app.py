@@ -2,11 +2,11 @@ import os
 
 from flask import Flask, render_template, request, flash, redirect, session, g
 from flask_debugtoolbar import DebugToolbarExtension
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
 
-from forms import UserAddForm, LoginForm, MessageForm
-from models import db, connect_db, User, Message
+from forms import UserAddForm, LoginForm, MessageForm, EditUserForm, LikeMessage
+from models import db, connect_db, User, Message, Likes
 
 app = Flask(__name__)
 
@@ -19,7 +19,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = (
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ECHO'] = False
-app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = True
+app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', "it's a secret")
 toolbar = DebugToolbarExtension(app)
 
@@ -46,7 +46,6 @@ def do_login(user):
 
     session[CURR_USER_KEY] = user.id
     
-
 
 def do_logout():
     """Logout user."""
@@ -120,7 +119,7 @@ def logout():
 
     do_logout()
     flash("You are now logged out")
-    return render_template('home.html')
+    return redirect('/login')
 
 
 ##############################################################################
@@ -218,7 +217,35 @@ def stop_following(follow_id):
 def profile():
     """Update profile for current user."""
 
-    # IMPLEMENT THIS
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+
+    form = EditUserForm()
+
+    if form.validate_on_submit():
+        if User.authenticate(g.user.username, form.password.data):
+            try:
+                g.user.username = form.username.data
+                g.user.email = form.email.data
+                g.user.image_url = form.image_url.data
+                g.user.header_image_url = form.header_image_url.data
+                g.user.bio = form.bio.data
+                db.session.add(g.user)
+                db.session.commit()
+
+            except IntegrityError:
+                flash("Username already taken", 'danger')
+                return redirect('/users/profile')
+            
+            flash("Changes Successful!", "success")
+            return redirect(f"{g.user.id}")
+      
+        flash("Incorrect Password", "danger")
+        return redirect('/users/profile')
+    
+    return render_template('users/edit.html', form=form)
+    
 
 
 @app.route('/users/delete', methods=["POST"])
@@ -299,16 +326,33 @@ def homepage():
     """
   
     if g.user:
+        
+        ids_of_following = [user.id for user in g.user.following]
         messages = (Message
                     .query
+                    .filter((Message.user_id == g.user.id) | (Message.user_id.in_(ids_of_following)))
                     .order_by(Message.timestamp.desc())
                     .limit(100)
                     .all())
-
-        return render_template('home.html', messages=messages)
-
+        form = LikeMessage()
+        liked_msg_ids = []
+        for msg in messages:
+            for like in msg.likes:
+                liked_msg_ids.append(like.message_id)
+        
+        return render_template('home.html', messages=messages, form=form, liked_msg_ids=liked_msg_ids)
+    
     else:
         return render_template('home-anon.html')
+    
+@app.route("/users/add_like/<msg_id>")
+def add_like(msg_id):
+    
+    like = Likes(user_id=g.user.id, message_id=msg_id)
+    db.session.add(like)
+    db.session.commit()
+    return redirect('/')
+
 
 
 ##############################################################################

@@ -541,3 +541,12 @@ p.card-bio {
 .message-404 .form-inline input {
   flex: 1;
 }
+
+.image-fit-container {
+  width: 100%;
+  height: 100%
+}
+
+.fas, .fa {
+color: black;
+}
