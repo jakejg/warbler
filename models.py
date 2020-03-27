@@ -111,10 +111,8 @@ class User(db.Model):
         secondaryjoin=(Follows.user_being_followed_id == id)
     )
 
-    likes = db.relationship(
-        'Message',
-        secondary="likes"
-    )
+    likes = db.relationship('Likes', backref='user')
+    
 
     def __repr__(self):
         return f"<User #{self.id}: {self.username}, {self.email}>"
@@ -197,7 +195,19 @@ class Message(db.Model):
     )
 
     likes = db.relationship('Likes', backref='messages')
+
     user = db.relationship('User')
+
+    @classmethod
+    def get_liked_msg_ids(cls, messages):
+        """ Get a list of all the message ids that are liked """
+
+        liked_msg_ids = []
+        for msg in messages:
+            for like in msg.likes:
+                liked_msg_ids.append(like.message_id)
+
+        return liked_msg_ids
 
 
 def connect_db(app):

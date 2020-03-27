@@ -51,16 +51,21 @@
               <span class="text-muted">{{ msg.timestamp.strftime('%d %B %Y') }}</span>
               <p>{{ msg.text }}</p>
             </div>
-            
-              <button class="btn btn-sm {{'btn-primary' if msg.id in liked_msg_ids else 'btn-secondary'}}"> 
+            {% if msg.user.id != g.user.id %}
+              {% if msg.id in liked_msg_ids %}
+              <a href="/users/delete_like/{{ msg.id }}">
+                <button class="btn btn-sm btn-primary"> 
+                    <i class="fas fa-star"></i>
+                </button>
+                  </a>
+              {% else %}
               <a href="/users/add_like/{{ msg.id }}">
-                {% if msg.id in liked_msg_ids %}
-                  <i class="fas fa-star"></i>
-                {% else %}
+                <button class="btn btn-sm btn-secondary"> 
                   <i class='fa fa-thumbs-up'></i>
-                {% endif %}
+                </button>
               </a>
-            </button>
+              {% endif %}
+            {% endif %}
           </li>
         {% endfor %}
       </ul>

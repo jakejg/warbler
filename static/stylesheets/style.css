@@ -547,6 +547,9 @@ p.card-bio {
   height: 100%
 }
 
-.fas, .fa {
+.fas {
+  color: rgb(224, 224, 6)
+}
+.fa {
 color: black;
 }

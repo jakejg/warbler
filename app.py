@@ -156,6 +156,7 @@ def users_show(user_id):
                 .order_by(Message.timestamp.desc())
                 .limit(100)
                 .all())
+    # import pdb; pdb.set_trace()
     return render_template('users/show.html', user=user, messages=messages)
 
 
@@ -181,6 +182,22 @@ def users_followers(user_id):
 
     user = User.query.get_or_404(user_id)
     return render_template('users/followers.html', user=user)
+
+@app.route('/users/<int:user_id>/likes')
+def users_likes(user_id):
+    """Show list of likes of this user."""
+
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+
+    user = User.query.get_or_404(user_id)
+
+    messages = [like.messages for like in user.likes]
+
+    liked_msg_ids = Message.get_liked_msg_ids(messages)
+
+    return render_template('users/likes.html', user=user, messages=messages, liked_msg_ids=liked_msg_ids)
 
 
 @app.route('/users/follow/<int:follow_id>', methods=['POST'])
@@ -263,6 +280,28 @@ def delete_user():
 
     return redirect("/signup")
 
+@app.route("/users/add_like/<msg_id>")
+def add_like(msg_id):
+    """Add a like"""
+   
+    like = Likes(user_id=g.user.id, message_id=msg_id)
+    db.session.add(like)
+    db.session.commit()
+
+    return redirect('/')
+
+@app.route("/users/delete_like/<msg_id>")
+def delete_like(msg_id):
+    """Delete a like"""
+
+    msg = Message.query.get_or_404(msg_id)
+
+    for like in msg.likes:
+        db.session.delete(like)
+
+    db.session.commit()
+    return redirect('/')
+
 
 ##############################################################################
 # Messages routes:
@@ -334,24 +373,18 @@ def homepage():
                     .order_by(Message.timestamp.desc())
                     .limit(100)
                     .all())
+
         form = LikeMessage()
-        liked_msg_ids = []
-        for msg in messages:
-            for like in msg.likes:
-                liked_msg_ids.append(like.message_id)
+
+        liked_msg_ids = Message.get_liked_msg_ids(messages)
         
         return render_template('home.html', messages=messages, form=form, liked_msg_ids=liked_msg_ids)
     
     else:
         return render_template('home-anon.html')
     
-@app.route("/users/add_like/<msg_id>")
-def add_like(msg_id):
-    
-    like = Likes(user_id=g.user.id, message_id=msg_id)
-    db.session.add(like)
-    db.session.commit()
-    return redirect('/')
+
+
 
 
 
