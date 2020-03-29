@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, render_template, request, flash, redirect, session, g
+from flask import Flask, render_template, request, flash, redirect, session, g, url_for
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
@@ -119,7 +119,7 @@ def logout():
 
     do_logout()
     flash("You are now logged out")
-    return redirect('/login')
+    return redirect(url_for('login'))
 
 
 ##############################################################################
@@ -156,17 +156,18 @@ def users_show(user_id):
                 .order_by(Message.timestamp.desc())
                 .limit(100)
                 .all())
-    # import pdb; pdb.set_trace()
+    
     return render_template('users/show.html', user=user, messages=messages)
 
+# def check_if_logged_in(func):
+#      if not g.user:
+#         flash("Access unauthorized.", "danger")
+#         return redirect("/")
 
 @app.route('/users/<int:user_id>/following')
+# @check_if_logged_in
 def show_following(user_id):
     """Show list of people this user is following."""
-
-    if not g.user:
-        flash("Access unauthorized.", "danger")
-        return redirect("/")
 
     user = User.query.get_or_404(user_id)
     return render_template('users/following.html', user=user)
@@ -212,7 +213,7 @@ def add_follow(follow_id):
     g.user.following.append(followed_user)
     db.session.commit()
 
-    return redirect(f"/users/{g.user.id}/following")
+    return redirect(url_for('show_following', user_id=g.user.id))
 
 
 @app.route('/users/stop-following/<int:follow_id>', methods=['POST'])
@@ -227,7 +228,7 @@ def stop_following(follow_id):
     g.user.following.remove(followed_user)
     db.session.commit()
 
-    return redirect(f"/users/{g.user.id}/following")
+    return redirect(url_for('show_following', user_id=g.user.id))
 
 
 @app.route('/users/profile', methods=["GET", "POST"])
@@ -253,13 +254,13 @@ def profile():
 
             except IntegrityError:
                 flash("Username already taken", 'danger')
-                return redirect('/users/profile')
+                return redirect(url_for('profile'))
             
             flash("Changes Successful!", "success")
             return redirect(f"{g.user.id}")
       
         flash("Incorrect Password", "danger")
-        return redirect('/users/profile')
+        return redirect(url_for('profile'))
     
     return render_template('users/edit.html', form=form)
     
@@ -278,9 +279,9 @@ def delete_user():
     db.session.delete(g.user)
     db.session.commit()
 
-    return redirect("/signup")
+    return redirect(url_for('signup'))
 
-@app.route("/users/add_like/<msg_id>")
+@app.route("/users/add_like/<msg_id>", methods=["POST"])
 def add_like(msg_id):
     """Add a like"""
    
@@ -290,7 +291,7 @@ def add_like(msg_id):
 
     return redirect('/')
 
-@app.route("/users/delete_like/<msg_id>")
+@app.route("/users/delete_like/<msg_id>", methods=["POST"])
 def delete_like(msg_id):
     """Delete a like"""
 
@@ -324,7 +325,7 @@ def messages_add():
         g.user.messages.append(msg)
         db.session.commit()
 
-        return redirect(f"/users/{g.user.id}")
+        return redirect(url_for('users_show', user_id= g.user.id))
 
     return render_template('messages/new.html', form=form)
 
@@ -349,7 +350,7 @@ def messages_destroy(message_id):
     db.session.delete(msg)
     db.session.commit()
 
-    return redirect(f"/users/{g.user.id}")
+    return redirect(url_for('users_show', user_id= g.user.id))
 
 
 ##############################################################################
