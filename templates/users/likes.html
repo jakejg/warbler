@@ -12,16 +12,10 @@
               <span class="text-muted">{{ msg.timestamp.strftime('%d %B %Y') }}</span>
               <p><a href="/messages/{{ msg.id  }}">{{ msg.text }}</a></p>
             </div>
-              {% if msg.id in liked_msg_ids %}
+              {% if user.id == g.user.id %}
               <form method="POST" action="/users/delete_like/{{ msg.id }}">
                 <button class="btn btn-sm btn-primary"> 
                     <i class="fas fa-star"></i>
-                </button>
-              </form>
-              {% else %}
-              <form method="POST" action="/users/add_like/{{ msg.id }}">
-                <button class="btn btn-sm btn-secondary"> 
-                  <i class='fa fa-thumbs-up'></i>
                 </button>
               </form>
               {% endif %}

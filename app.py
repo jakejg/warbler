@@ -3,6 +3,7 @@ import os
 from flask import Flask, render_template, request, flash, redirect, session, g, url_for
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
+from functools import wraps
 
 
 from forms import UserAddForm, LoginForm, MessageForm, EditUserForm, LikeMessage
@@ -52,6 +53,19 @@ def do_logout():
 
     if CURR_USER_KEY in session:
         del session[CURR_USER_KEY]
+
+# Decorator function for checking login
+def check_if_logged_in(func):
+    @wraps(func)
+    def inner(*args, **kwargs):
+
+        if not g.user:
+            flash("Access unauthorized.", "danger")
+            return redirect("/")
+
+        return func(*args, **kwargs)
+
+    return inner
 
 
 @app.route('/signup', methods=["GET", "POST"])
@@ -158,14 +172,10 @@ def users_show(user_id):
                 .all())
     
     return render_template('users/show.html', user=user, messages=messages)
-
-# def check_if_logged_in(func):
-#      if not g.user:
-#         flash("Access unauthorized.", "danger")
-#         return redirect("/")
+    
 
 @app.route('/users/<int:user_id>/following')
-# @check_if_logged_in
+@check_if_logged_in
 def show_following(user_id):
     """Show list of people this user is following."""
 
@@ -174,31 +184,23 @@ def show_following(user_id):
 
 
 @app.route('/users/<int:user_id>/followers')
+@check_if_logged_in
 def users_followers(user_id):
     """Show list of followers of this user."""
-
-    if not g.user:
-        flash("Access unauthorized.", "danger")
-        return redirect("/")
 
     user = User.query.get_or_404(user_id)
     return render_template('users/followers.html', user=user)
 
 @app.route('/users/<int:user_id>/likes')
+@check_if_logged_in
 def users_likes(user_id):
     """Show list of likes of this user."""
-
-    if not g.user:
-        flash("Access unauthorized.", "danger")
-        return redirect("/")
 
     user = User.query.get_or_404(user_id)
 
     messages = [like.messages for like in user.likes]
 
-    liked_msg_ids = Message.get_liked_msg_ids(messages)
-
-    return render_template('users/likes.html', user=user, messages=messages, liked_msg_ids=liked_msg_ids)
+    return render_template('users/likes.html', user=user, messages=messages)
 
 
 @app.route('/users/follow/<int:follow_id>', methods=['POST'])
