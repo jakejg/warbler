@@ -542,11 +542,15 @@ p.card-bio {
   flex: 1;
 }
 
-.image-fit-container {
-  width: 100%;
-  height: 100%
+.image-container {
+  height: 400px;
+  position: relative;
+  overflow: hidden;
 }
-
+.header-image {
+  width: 10%;
+  height: auto;
+}
 .fas {
   color: rgb(224, 224, 6)
 }

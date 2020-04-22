@@ -204,12 +204,9 @@ def users_likes(user_id):
 
 
 @app.route('/users/follow/<int:follow_id>', methods=['POST'])
+@check_if_logged_in
 def add_follow(follow_id):
     """Add a follow for the currently-logged-in user."""
-
-    if not g.user:
-        flash("Access unauthorized.", "danger")
-        return redirect("/")
 
     followed_user = User.query.get_or_404(follow_id)
     g.user.following.append(followed_user)
@@ -219,12 +216,9 @@ def add_follow(follow_id):
 
 
 @app.route('/users/stop-following/<int:follow_id>', methods=['POST'])
+@check_if_logged_in
 def stop_following(follow_id):
     """Have currently-logged-in-user stop following this user."""
-
-    if not g.user:
-        flash("Access unauthorized.", "danger")
-        return redirect("/")
 
     followed_user = User.query.get(follow_id)
     g.user.following.remove(followed_user)
@@ -234,12 +228,10 @@ def stop_following(follow_id):
 
 
 @app.route('/users/profile', methods=["GET", "POST"])
+@check_if_logged_in
 def profile():
     """Update profile for current user."""
 
-    if not g.user:
-        flash("Access unauthorized.", "danger")
-        return redirect("/")
 
     form = EditUserForm()
 
@@ -249,7 +241,7 @@ def profile():
                 g.user.username = form.username.data
                 g.user.email = form.email.data
                 g.user.image_url = form.image_url.data
-                g.user.header_image_url = form.header_image_url.data
+                g.user.header_image_url = form.header_image_url.data or "/static/images/warbler-hero.jpg"
                 g.user.bio = form.bio.data
                 db.session.add(g.user)
                 db.session.commit()
@@ -269,12 +261,9 @@ def profile():
 
 
 @app.route('/users/delete', methods=["POST"])
+@check_if_logged_in
 def delete_user():
     """Delete user."""
-
-    if not g.user:
-        flash("Access unauthorized.", "danger")
-        return redirect("/")
 
     do_logout()
 
@@ -310,15 +299,12 @@ def delete_like(msg_id):
 # Messages routes:
 
 @app.route('/messages/new', methods=["GET", "POST"])
+@check_if_logged_in
 def messages_add():
     """Add a message:
 
     Show form if GET. If valid, update message and redirect to user page.
     """
-
-    if not g.user:
-        flash("Access unauthorized.", "danger")
-        return redirect("/")
 
     form = MessageForm()
 
@@ -341,12 +327,10 @@ def messages_show(message_id):
 
 
 @app.route('/messages/<int:message_id>/delete', methods=["POST"])
+@check_if_logged_in
 def messages_destroy(message_id):
     """Delete a message."""
 
-    if not g.user:
-        flash("Access unauthorized.", "danger")
-        return redirect("/")
 
     msg = Message.query.get(message_id)
     db.session.delete(msg)
